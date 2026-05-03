@@ -1,0 +1,159 @@
+.crossword-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 800px;
+  margin: 0 auto;
+  gap: 2rem;
+  padding: 1rem;
+}
+
+.crossword-header {
+  text-align: center;
+}
+
+.crossword-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, hsl(var(--primary)), #3b82f6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+}
+
+.crossword-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .crossword-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.crossword-board {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-size), 1fr);
+  gap: 2px;
+  background-color: hsl(var(--border));
+  padding: 4px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+  max-width: 400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.cell-wrapper {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  background-color: hsl(var(--card));
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.cell-wrapper.block {
+  background-color: transparent;
+}
+
+.cell-number {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  z-index: 10;
+  pointer-events: none;
+}
+
+.cell-input {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  font-size: 2rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: none;
+  background: transparent;
+  color: hsl(var(--foreground));
+  outline: none;
+  transition: all 0.2s ease;
+  caret-color: transparent;
+}
+
+.cell-input:focus, .cell-input.active {
+  background-color: hsl(var(--primary) / 0.1);
+  box-shadow: inset 0 0 0 2px hsl(var(--primary));
+}
+
+.cell-input.correct {
+  color: #10b981; /* Verde */
+  background-color: #10b9811a; /* Verde bem claro */
+}
+
+.cell-input.error {
+  color: #ef4444; /* Vermelho */
+  background-color: #ef44441a; /* Vermelho bem claro */
+}
+
+/* Clues */
+.crossword-clues {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  background-color: hsl(var(--card));
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+
+.clues-group h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  color: hsl(var(--foreground));
+  border-bottom: 2px solid hsl(var(--border));
+  padding-bottom: 0.25rem;
+}
+
+.clues-group ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.clue-item {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: hsl(var(--muted-foreground));
+}
+
+.clue-item:hover {
+  background-color: hsl(var(--muted));
+}
+
+.clue-item.active {
+  background-color: hsl(var(--primary) / 0.1);
+  color: hsl(var(--primary));
+  font-weight: 500;
+}
+
+.clue-item strong {
+  color: hsl(var(--foreground));
+}
