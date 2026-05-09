@@ -1,0 +1,340 @@
+' ════════════════════════════════════════════════════════
+'  DIAGRAMA 1 — Arquitetura de Componentes
+' ════════════════════════════════════════════════════════
+@startuml Arquitetura
+
+title IA Crossword — Arquitetura de Componentes
+
+!theme plain
+skinparam defaultFontName Inter
+skinparam defaultFontSize 12
+skinparam ArrowColor #7C3AED
+skinparam ArrowThickness 1.5
+skinparam componentBorderColor #7C3AED
+skinparam componentBackgroundColor #FDFBFF
+skinparam packageBorderColor #C4B5FD
+skinparam packageBackgroundColor #F5F3FF
+skinparam noteBorderColor #A78BFA
+skinparam noteBackgroundColor #FAF5FF
+
+' ── CAMADA DE DADOS ─────────────────────────────────────
+package "📦 Dados  (puzzleData.ts)" as DataLayer {
+  component "clues: Clue[]\n──────────────────\n8 palavras sobre IA\nnumber, direction,\ntext, answer, row, col" as Clues
+
+  component "generateInitialGrid()\n──────────────────\nCria grid 9×10\nIsBlock = true por padrão\nPopula células via clues[]" as GridGen
+
+  component "GRID_ROWS = 9\nGRID_COLS = 10" as Constants
+}
+
+' ── CAMADA DE LÓGICA ────────────────────────────────────
+package "⚙️ Lógica  (useCrossword.ts)" as LogicLayer {
+  component "Estado (React State)\n────────────────────────\ngrid: Cell[][]          ← grade com letras\nactiveCell: {row, col}  ← célula selecionada\ndirection: row | col    ← direção ativa\nisCompleted: boolean    ← jogo concluído\nhintsLeft: number       ← dicas restantes\nhintedCells: Set<id>    ← células reveladas\nelapsedSeconds: number  ← tempo decorrido\ntimerStarted: boolean   ← timer ativo" as StateBlock
+
+  component "Efeitos (useEffect)\n──────────────────────────────────────────\n[grid] → verifica condição de vitória\n[timerStarted, isCompleted] → gerencia interval" as Effects
+
+  component "Handlers\n──────────────────────────────────────────\nhandleCellChange(row, col, value)\nhandleKeyDown(row, col, event)\nhandleCellClick(row, col)\nhandleClueClick(clue)\nuseHint()\ngetActiveWordCells() → Set<id>\nresetGame()" as Handlers
+}
+
+' ── CAMADA DE APRESENTAÇÃO ──────────────────────────────
+package "🖥️ UI  (Crossword/index.tsx)" as UILayer {
+  component "Stats Bar\n──────────────\nTimer  MM:SS\nProgresso  X/Y\nBarra visual\nBotão Dica\nBotão Reset" as StatsBar
+
+  component "Board  (grid 9×10)\n──────────────────\n90× <Cell />" as Board
+
+  component "Modal de Vitória\n─────────────────\nAnimação spring\nTempo final\nDicas usadas\nJogar Novamente" as Modal
+}
+
+package "🔲 Cell.tsx" as CellPkg {
+  component "<input> 1 letra\n──────────────────────────\nEstados visuais:\n  .active        → fundo roxo\n  .word-highlight → roxo claro\n  .correct        → verde\n  .hinted         → âmbar\n  .error          → vermelho\n\nAnimações Framer Motion:\n  erro → shake x\n  vitória → scale bounce" as CellComp
+}
+
+package "📋 Clues.tsx" as CluesPkg {
+  component "Listas de pistas\n──────────────────────────\n→ Horizontal\n↓ Vertical\nDestaca pista ativa\nClique navega ao início" as CluesComp
+}
+
+' ── RELAÇÕES ────────────────────────────────────────────
+DataLayer -down-> LogicLayer : clues[], generateInitialGrid()
+LogicLayer -down-> UILayer : grid, activeCell, direction,\nisCompleted, hintsLeft,\nhintedCells, elapsedSeconds,\ncorrectCells, totalCells,\nhandlers, getActiveWordCells()
+UILayer -down-> CellPkg : 90 instâncias\n(props por célula)
+UILayer -down-> CluesPkg : onClueClick\nactiveCell, direction
+
+StateBlock -right-> Effects : dispara ao mudar
+Handlers -up-> StateBlock : atualiza via setState
+
+note right of Effects
+  useEffect #1 — Win Monitor
+  Dispara sempre que grid muda.
+  Se todos os cells não-block
+  têm letter === answer → vitória.
+
+  useEffect #2 — Timer
+  Dispara quando timerStarted
+  ou isCompleted mudam.
+  Gerencia setInterval de 1s.
+end note
+
+@enduml
+
+@newpage
+
+' ════════════════════════════════════════════════════════
+'  DIAGRAMA 2 — Fluxo: Usuário Digita uma Letra
+' ════════════════════════════════════════════════════════
+@startuml FluxoDigitacao
+
+title IA Crossword — Fluxo: Digitação de uma Letra
+
+!theme plain
+skinparam defaultFontName Inter
+skinparam ArrowColor #7C3AED
+skinparam SequenceBoxBorderColor #C4B5FD
+skinparam SequenceBoxBackgroundColor #F5F3FF
+skinparam ParticipantBorderColor #7C3AED
+skinparam ParticipantBackgroundColor #FDFBFF
+skinparam NoteBackgroundColor #FAF5FF
+skinparam NoteBorderColor #A78BFA
+
+actor "Usuário" as User #EDE9FE
+participant "Cell.tsx\n<input>" as Cell #F5F3FF
+participant "Crossword\nindex.tsx" as UI #F5F3FF
+participant "useCrossword\n(Hook)" as Hook #EDE9FE
+participant "React State\n(grid, activeCell...)" as State #F0EBFF
+participant "useEffect\n(Win Monitor)" as WinEffect #FAF5FF
+
+== Interação do Usuário ==
+
+User -> Cell : digita letra 'N'
+activate Cell
+
+Cell -> UI : onChange('N')
+activate UI
+
+UI -> Hook : handleCellChange(row=3, col=5, 'N')
+activate Hook
+
+Hook -> Hook : startTimer()\nse timerStarted=false →\nsetTimerStarted(true)
+
+Hook -> State : setGrid(prev => {\n  next[3][5].letter = 'N'\n  return next\n})
+activate State
+
+State --> Hook : grid atualizado
+deactivate State
+
+Hook -> State : getNextCell(3, 5, direction)\n→ próxima célula não-block
+State --> Hook : { row: 3, col: 6 }
+
+Hook -> State : setActiveCell({ row: 3, col: 6 })
+deactivate Hook
+
+== Re-render React ==
+
+State -> UI : re-render disparado
+deactivate UI
+
+UI -> UI : getActiveWordCells()\ncalcula Set<id> da palavra ativa
+
+UI -> Cell : isActive=true\n[célula (3,6) recebe foco]
+UI -> Cell : isInActiveWord=true\n[células da palavra destacadas]
+Cell -> Cell : inputRef.focus()\n[auto-foco via useEffect]
+deactivate Cell
+
+== Verificação de Vitória (assíncrono) ==
+
+State -> WinEffect : grid mudou\n[dep. do useEffect]
+activate WinEffect
+
+WinEffect -> WinEffect : nonBlockCells =\ngrid.flat().filter(!isBlock)\nevery(c => c.letter !== ''\n  && c.letter === c.answer)
+
+alt ✅ todas as células corretas
+  WinEffect -> State : setIsCompleted(true)
+  State -> UI : modal de vitória animado 🎉
+  State -> WinEffect : isCompleted=true\n→ clearInterval (timer para)
+else ❌ ainda há células erradas ou vazias
+  WinEffect -> WinEffect : nada acontece
+end
+
+deactivate WinEffect
+
+@enduml
+
+@newpage
+
+' ════════════════════════════════════════════════════════
+'  DIAGRAMA 3 — Fluxo: Sistema de Dicas
+' ════════════════════════════════════════════════════════
+@startuml FluxoDica
+
+title IA Crossword — Fluxo: Sistema de Dicas
+
+!theme plain
+skinparam defaultFontName Inter
+skinparam ArrowColor #7C3AED
+skinparam ParticipantBorderColor #7C3AED
+skinparam ParticipantBackgroundColor #FDFBFF
+skinparam SequenceBoxBorderColor #C4B5FD
+skinparam SequenceBoxBackgroundColor #F5F3FF
+skinparam NoteBackgroundColor #FAF5FF
+skinparam NoteBorderColor #A78BFA
+
+actor "Usuário" as User #EDE9FE
+participant "Crossword\nindex.tsx" as UI #F5F3FF
+participant "useCrossword\n(Hook)" as Hook #EDE9FE
+participant "React State" as State #F0EBFF
+
+== Solicitação de Dica ==
+
+User -> UI : clica "Dica (N)"
+UI -> Hook : useHint()
+activate Hook
+
+Hook -> Hook : guard: hintsLeft > 0\n&& !isCompleted ?
+
+== Seleção da Célula Alvo ==
+
+Hook -> Hook : getActiveWordCells()\n→ Set<id> da palavra ativa
+
+Hook -> Hook : unsolvedInWord = células da palavra\nonde letter ≠ answer
+
+alt há células não resolvidas na palavra ativa
+  Hook -> Hook : targets = unsolvedInWord
+  note right : prioriza a palavra\nque o jogador está editando
+else palavra ativa já está completa
+  Hook -> Hook : targets = grid.flat()\n  .filter(!isBlock && letter ≠ answer)\n  .map(c => c.id)
+  note right : fallback: qualquer\ncélula do grid
+end
+
+Hook -> Hook : chosenId = targets[\n  Math.random() * targets.length\n]
+
+== Atualização de Estado ==
+
+Hook -> State : setHintsLeft(n => n - 1)
+Hook -> State : setHintedCells(prev =>\n  new Set([...prev, chosenId]))
+Hook -> State : setGrid(prev => {\n  next[r][c].letter = answer\n  return next\n})
+deactivate Hook
+
+== Re-render Visual ==
+
+State -> UI : re-render
+UI -> UI : célula revelada recebe\nclasse CSS .hinted\n→ cor âmbar #fef3c7\n(distinto do verde .correct)
+
+note over UI
+  A distinção visual é intencional:
+  🟢 .correct  → letra descoberta pelo jogador
+  🟡 .hinted   → letra revelada por dica
+end note
+
+@enduml
+
+@newpage
+
+' ════════════════════════════════════════════════════════
+'  DIAGRAMA 4 — Máquina de Estados do Jogo
+' ════════════════════════════════════════════════════════
+@startuml EstadosJogo
+
+title IA Crossword — Máquina de Estados
+
+!theme plain
+skinparam defaultFontName Inter
+skinparam ArrowColor #7C3AED
+skinparam StateBorderColor #7C3AED
+skinparam StateBackgroundColor #F5F3FF
+skinparam StateStartColor #7C3AED
+skinparam StateEndColor #5B21B6
+
+[*] --> Inativo : app inicializa\ngrid vazio, timer=0\nhintsLeft=3
+
+state Inativo {
+  note : timerStarted = false\ngrid sem letras\nActiveCell = (0,0)
+}
+
+state EmAndamento {
+  note : timerStarted = true\ninterval de 1s ativo\nhintsLeft ∈ {0,1,2,3}
+}
+
+state Concluido {
+  note : isCompleted = true\ntimer parado\nmodal de vitória visível
+}
+
+Inativo --> EmAndamento : 1ª letra digitada\nou dica usada\n[startTimer()]
+
+EmAndamento --> EmAndamento : digita letra\n/ backspace\n/ navega (arrows)\n/ clique em célula\n/ clique em pista\n/ usa dica
+
+EmAndamento --> Concluido : useEffect detecta\nall cells corretos\n[setIsCompleted(true)]
+
+Concluido --> Inativo : resetGame()\n────────────────\nsetGrid(initialGrid)\nsetActiveCell({0,0})\nsetDirection('row')\nsetIsCompleted(false)\nsetHintsLeft(3)\nsetHintedCells(∅)\nsetElapsedSeconds(0)\nsetTimerStarted(false)
+
+Inativo --> Inativo : resetGame()\n(já estava inativo)
+
+@enduml
+
+@newpage
+
+' ════════════════════════════════════════════════════════
+'  DIAGRAMA 5 — Estrutura de Dados
+' ════════════════════════════════════════════════════════
+@startuml EstruturaDados
+
+title IA Crossword — Estrutura de Dados
+
+!theme plain
+skinparam defaultFontName Inter
+skinparam ArrowColor #7C3AED
+skinparam ClassBorderColor #7C3AED
+skinparam ClassBackgroundColor #F5F3FF
+skinparam ClassHeaderBackgroundColor #EDE9FE
+
+class "Cell (célula do grid)" as CellType {
+  +id: string        // "row-col"  ex: "3-5"
+  +answer: string    // letra correta (ex: "N")
+  +letter: string    // letra digitada pelo usuário
+  +isBlock: boolean  // true = célula preta (bloqueada)
+  +number: number | null  // número da pista (se início)
+}
+
+class "Clue (pista)" as ClueType {
+  +number: number      // identificador da pista
+  +direction: 'row' | 'col'
+  +text: string        // enunciado em português
+  +answer: string      // palavra completa (ex: "NEURAL")
+  +row: number         // linha de início (0-based)
+  +col: number         // coluna de início (0-based)
+}
+
+class "Hook State" as HookState {
+  +grid: Cell[][]            // 9 × 10 = 90 células
+  +activeCell: {row, col}    // célula com foco
+  +direction: 'row' | 'col'  // direção de navegação
+  +isCompleted: boolean
+  +hintsLeft: number         // max 3
+  +hintedCells: Set<string>  // IDs das reveladas
+  +elapsedSeconds: number
+  +timerStarted: boolean
+}
+
+class "Grid Layout\n(9 linhas × 10 colunas)" as Grid {
+  MODELO  → row=0, col=0  (→ horizontal)
+  DADOS   → row=0, col=2  (↓ vertical)
+  PROMPT  → row=2, col=3  (→ horizontal)
+  REDE    → row=2, col=4  (↓ vertical)
+  TOKEN   → row=3, col=1  (→ horizontal)
+  NEURAL  → row=3, col=5  (↓ vertical)
+  TREINO  → row=6, col=4  (→ horizontal)
+  BIAS    → row=7, col=3  (→ horizontal)
+}
+
+class "Interseções Verificadas" as Intersections {
+  (0,2)  MODELO[2]='D' ∩ DADOS[0]='D'   ✓
+  (2,4)  PROMPT[1]='R' ∩ REDE[0]='R'    ✓
+  (3,2)  TOKEN[1]='O'  ∩ DADOS[3]='O'   ✓
+  (3,4)  TOKEN[3]='E'  ∩ REDE[1]='E'    ✓
+  (3,5)  TOKEN[4]='N'  ∩ NEURAL[0]='N'  ✓
+  (6,5)  TREINO[1]='R' ∩ NEURAL[3]='R'  ✓
+  (7,5)  BIAS[2]='A'   ∩ NEURAL[4]='A'  ✓
+}
+
+HookState "1" *-- "90" CellType : grid[][]
+ClueType "8" --> Grid : define posições
+Grid "1" *-- "7" Intersections : compartilham letra
+
+@enduml
