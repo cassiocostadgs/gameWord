@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateInitialGrid, GRID_ROWS, GRID_COLS, clues, Clue } from '../data/puzzleData';
+import { saveGameHistory } from '../services/gameHistory';
 
 export const TOTAL_HINTS = 3;
 
@@ -12,6 +13,7 @@ export function useCrossword() {
   const [hintedCells, setHintedCells] = useState<Set<string>>(new Set());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [timerStarted, setTimerStarted] = useState(false);
+  const [historySaved, setHistorySaved] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Timer: start on first input, stop on completion
@@ -37,6 +39,24 @@ export function useCrossword() {
 
   const totalCells = grid.flat().filter(c => !c.isBlock).length;
   const correctCells = grid.flat().filter(c => !c.isBlock && c.letter !== '' && c.letter === c.answer).length;
+
+  useEffect(() => {
+    if (!isCompleted || historySaved) return;
+
+    const gameHistory = {
+      durationSeconds: elapsedSeconds,
+      hintsUsed: TOTAL_HINTS - hintsLeft,
+      totalCells,
+      correctCells,
+      completedAt: new Date().toISOString(),
+    };
+
+    saveGameHistory(gameHistory)
+      .then(() => setHistorySaved(true))
+      .catch(error => {
+        console.error('Falha ao salvar histórico de jogo no Supabase:', error);
+      });
+  }, [isCompleted, historySaved, elapsedSeconds, hintsLeft, totalCells, correctCells]);
 
   const setCell = (row: number, col: number, letter: string) => {
     if (grid[row][col].isBlock) return;
@@ -182,6 +202,7 @@ export function useCrossword() {
     setHintedCells(new Set());
     setElapsedSeconds(0);
     setTimerStarted(false);
+    setHistorySaved(false);
   };
 
   return {

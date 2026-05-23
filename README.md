@@ -10,10 +10,36 @@ View your app in AI Studio: https://ai.studio/apps/drive/1aZxr69zSUF1ghw62RQsFUF
 
 ## Run Locally
 
-**Prerequisites:**  Node.js
-
+**Prerequisites:** Node.js
 
 1. Install dependencies:
    `npm install`
-2. Run the app:
+2. Create a `.env` file from `.env.example` and fill in your Supabase Cloud values
+   - `SUPABASE_URL`
+   - `SUPABASE_SERVICE_KEY`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
+3. Run the backend proxy server:
+   `npm run server`
+4. Run the frontend app:
    `npm run dev`
+
+## Supabase Cloud Setup
+
+1. Create a project at https://app.supabase.com.
+2. In the project, go to Settings → API.
+3. Copy the `Project URL` into `SUPABASE_URL` and `VITE_SUPABASE_URL`.
+4. Copy the `Service Role Key` into `SUPABASE_SERVICE_KEY`.
+5. Copy the `anon public` key into `VITE_SUPABASE_ANON_KEY`.
+
+## Test the history endpoint
+
+With `npm run server` running, use:
+
+```bash
+curl -v -X POST http://localhost:4000/api/game-history \
+  -H "Content-Type: application/json" \
+  -d '{"durationSeconds":120,"hintsUsed":1,"totalCells":42,"correctCells":42,"completedAt":"2026-05-23T12:00:00Z"}'
+```
+
+If the request succeeds, the response JSON is your evidence of insertion.
