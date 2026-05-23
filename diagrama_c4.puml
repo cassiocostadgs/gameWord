@@ -1,0 +1,74 @@
+@startuml C4_IA_Crossword
+' C4 PlantUML diagrams: Context, Container, Component
+!define C4P https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master
+!includeurl C4P/C4_Context.puml
+!includeurl C4P/C4_Container.puml
+!includeurl C4P/C4_Component.puml
+
+' ==================================================================
+' System Context
+' ==================================================================
+
+Person(user, "Usuário", "Jogador que interage com o jogo via navegador")
+System_Boundary(s1, "IA Crossword") {
+  System(webapp, "IA Crossword (SPA)", "React + TypeScript single-page application")
+  System_Ext(supabase, "Supabase Cloud", "Banco Postgres gerenciado + API (serviço externo)")
+}
+
+Rel(user, webapp, "Usa via navegador (digita, clica dicas)")
+Rel(webapp, supabase, "Persistência via backend proxy / API (não expõe service key)", "HTTPS / REST")
+
+' ==================================================================
+' Container diagram
+' ==================================================================
+
+Container_Boundary(s1, "IA Crossword") {
+  Container(frontend, "Frontend (Browser)", "React + Vite", "SPA que renderiza o tabuleiro, recebe eventos do usuário e chama o backend para histórico")
+  Container(backend, "Backend Proxy", "Node.js / Express", "Expõe /api/game-history e faz chamadas autenticadas ao Supabase (service role key no servidor)")
+  ContainerDb(db, "Supabase (Postgres)", "Postgres", "Tabela: game_history (duration_seconds, hints_used, ...)")
+}
+
+Rel(user, frontend, "Interage com (UI/Keyboard/Mouse)")
+Rel(frontend, backend, "POST /api/game-history — envia resultado do jogo", "HTTP/JSON")
+Rel(backend, db, "INSERT / SELECT via Supabase client", "HTTPS (Supabase API)")
+Rel(frontend, db, "(opcional) leitura direta via anon key", "Supabase JS SDK (anon key)")
+
+' ==================================================================
+' Component diagram — Frontend
+' ==================================================================
+
+Container(frontend, "Frontend (Browser)") {
+  Component(ui, "Crossword UI (Crossword/index.tsx)", "React component", "Renderiza board, stats, dicas e modal de vitória")
+  Component(cell, "Cell (Cell.tsx)", "React component", "Input por célula; focus management; animações")
+  Component(clues, "Clues (Clues.tsx)", "React component", "Lista de pistas; clique para navegar")
+  Component(hook, "useCrossword (useCrossword.ts)", "Custom hook", "Estado do jogo, timer, dicas, lógica de verificação e handlers")
+  Component(data, "puzzleData (puzzleData.ts)", "Module", "Define clues, GRID_ROWS/GRID_COLS e generateInitialGrid()")
+}
+
+Rel(ui, hook, "usa / chama handlers e lê estado")
+Rel(hook, data, "carrega clues e grid inicial")
+Rel(ui, cell, "renderiza 90 instâncias")
+Rel(ui, clues, "exibe lista de pistas")
+
+' ==================================================================
+' Component diagram — Backend
+' ==================================================================
+
+Container(backend, "Backend Proxy") {
+  Component(api, "Game History API (/api/game-history)", "Express route", "Recebe POST do frontend e persiste no Supabase usando service_role key")
+  Component(supaclient, "Supabase Client", "@supabase/supabase-js", "Comunica com o serviço Supabase Cloud usando a Service Role Key")
+}
+
+Rel(frontend, api, "POST /api/game-history (JSON)")
+Rel(api, supaclient, "insere registro na tabela game_history")
+Rel(supaclient, db, "API REST / PostgREST / Postgres")
+
+' ==================================================================
+' Deployment notes
+' ==================================================================
+
+' - Frontend: servido pelo Vite em desenvolvimento ou build estático em produção (Netlify, Vercel, S3+Cloudfront)
+' - Backend Proxy: Node.js hospedado em servidor leve (Heroku, Railway, Fly) — mantém a Service Role Key segura
+' - Supabase: serviço gerenciado (Cloud)
+
+@enduml
