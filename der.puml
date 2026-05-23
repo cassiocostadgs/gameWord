@@ -1,0 +1,78 @@
+@startuml DER_IA_Crossword
+' Diagrama ER (DER) da aplicação IA Crossword
+' Entidades persistentes (estabelecidas e sugeridas)
+
+skinparam linetype ortho
+skinparam defaultFontName "Inter"
+
+entity "users" as users {
+  * id : bigint <<PK>>
+  --
+  username : varchar
+  email : varchar
+  created_at : timestamptz
+}
+
+entity "puzzles" as puzzles {
+  * id : bigint <<PK>>
+  --
+  title : varchar
+  rows : integer
+  cols : integer
+  created_at : timestamptz
+}
+
+entity "puzzle_clues" as puzzle_clues {
+  * id : bigint <<PK>>
+  --
+  puzzle_id : bigint <<FK>>
+  number : integer
+  direction : varchar
+  text : text
+  answer : varchar
+  row : integer
+  col : integer
+}
+
+entity "game_history" as game_history {
+  * id : bigint <<PK>>
+  --
+  user_id : bigint <<FK>>
+  puzzle_id : bigint <<FK>>
+  duration_seconds : integer
+  hints_used : integer
+  total_cells : integer
+  correct_cells : integer
+  completed_at : timestamptz
+  created_at : timestamptz
+}
+
+entity "game_cells" as game_cells {
+  * id : bigint <<PK>>
+  --
+  game_history_id : bigint <<FK>>
+  row : integer
+  col : integer
+  answer : varchar
+  letter : varchar
+  is_correct : boolean
+}
+
+' Relacionamentos
+users ||--o{ game_history : "played"
+puzzles ||--o{ puzzle_clues : "has"
+puzzles ||--o{ game_history : "used_in"
+game_history ||--o{ game_cells : "contains"
+
+' Notas
+note right of game_history
+  - Registro por partida (pode ser renomeado para game_sessions)
+  - Chave `user_id` opcional se não houver autenticação
+end note
+
+note left of puzzle_clues
+  - Estas linhas refletem o conteúdo de `src/data/puzzleData.ts`
+  - Podem ser importadas para popular `puzzles` e `puzzle_clues`
+end note
+
+@enduml
