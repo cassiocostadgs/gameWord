@@ -1,0 +1,13 @@
+23/05/2026 16:29:45 [INFO] Verificando arquivo de configuracao MCP...
+23/05/2026 16:29:45 [SUCCESS] Arquivo MCP encontrado: C:\Users\cassio.costa\AppData\Roaming\Code\User\mcp.json
+23/05/2026 16:29:45 [SUCCESS] Servidor MCP configurado: io.github.github/github-mcp-server
+23/05/2026 16:29:45 [SUCCESS] URL do endpoint: https://api.githubcopilot.com/mcp/
+23/05/2026 16:29:45 [SUCCESS] Versao do servidor: 1.0.3
+23/05/2026 16:29:45 [INFO] Verificando instalacao do servidor MCP...
+23/05/2026 16:29:45 [SUCCESS] Diretorio MCP encontrado
+23/05/2026 16:29:45 [SUCCESS] Servidor instalado: io.github.github.github-mcp-server-1.0.3
+23/05/2026 16:29:45 [INFO] Verificando sincronizacao MCP...
+23/05/2026 16:29:45 [SUCCESS] Ultima sincronizacao: 08/05/2026 16:17:52
+23/05/2026 16:29:45 [INFO] Verificando extensao GitHub Copilot...
+23/05/2026 16:29:45 [SUCCESS] GitHub Copilot Chat instalado
+23/05/2026 16:29:45 [SUCCESS] Verificacao concluida. Relatorio salvo em: ./mcp-verification-log-20260523-162945.txt
